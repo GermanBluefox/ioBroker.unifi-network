@@ -33,6 +33,7 @@ function createAdapterSpy(): AdapterSpy {
     const stub: AdapterStub = createAdapterStub();
     const sent: SentMessage[] = [];
     Object.assign(stub.adapter, {
+        cache: stub.cache,
         sendTo: (to: string, command: string, list: JsonConfigAutocompleteSendTo[], callback: unknown): void => {
             sent.push({ to, command, list, callback });
         },
@@ -313,6 +314,69 @@ describe('messageHandler (offline, synthetische Daten)', () => {
 
             expect(sent).to.have.length(2);
             expect(sent[1].list).to.deep.equal(sent[0].list);
+        });
+    });
+
+    describe('client.getClients (network.getClients)', () => {
+        /**
+         * Fills the cache of the adapter with two clients and one guest.
+         *
+         * @param adapter the adapter stub
+         */
+        function fillCache(adapter: ioBroker.myAdapter): void {
+            Object.assign(adapter.cache.clients, {
+                [MAC_1]: { mac: MAC_1, name: 'Laptop', ip: '192.168.1.10', is_wired: false, last_uplink_name: 'AP Flur', is_guest: false },
+                [MAC_2]: { mac: MAC_2, hostname: 'drucker', is_wired: true, last_uplink_name: 'Switch', is_guest: false },
+                [MAC_3]: { mac: MAC_3, name: 'Gast-Handy', ip: '192.168.2.5', is_wired: false, is_guest: true },
+            });
+            Object.assign(adapter.cache.isOnline, {
+                [MAC_1]: { val: true },
+                [MAC_2]: { val: false },
+                [MAC_3]: { val: true },
+            });
+        }
+
+        const laptop = { mac: MAC_1, name: 'Laptop', ip: '192.168.1.10', online: true, wired: false, accessPoint: 'AP Flur' };
+        const printer = { mac: MAC_2, name: 'drucker', online: false, wired: true };
+        const guest = { mac: MAC_3, name: 'Gast-Handy', ip: '192.168.2.5', online: true, wired: false, guest: true };
+
+        it('liefert die Clients aus dem Cache, sortiert nach Namen', async () => {
+            const messageHandler = await loadMessageHandler();
+            const { adapter, sent } = createAdapterSpy();
+            fillCache(adapter);
+
+            messageHandler.client.getClients(createMessage('getClients'), adapter, true);
+
+            expect(sent[0].list).to.deep.equal({ clients: [guest, laptop, printer] });
+        });
+
+        it('liefert mit online: true nur die verbundenen Clients', async () => {
+            const messageHandler = await loadMessageHandler();
+            const { adapter, sent } = createAdapterSpy();
+            fillCache(adapter);
+
+            const message: ioBroker.Message = { ...createMessage('getClients'), message: { online: true } };
+            messageHandler.client.getClients(message, adapter, true);
+
+            expect(sent[0].list).to.deep.equal({ clients: [guest, laptop] });
+        });
+
+        it('antwortet NOT_CONNECTED, solange keine Verbindung bestand', async () => {
+            const messageHandler = await loadMessageHandler();
+            const { adapter, sent } = createAdapterSpy();
+
+            messageHandler.client.getClients(createMessage('getClients'), adapter, false);
+
+            expect(sent[0].list).to.deep.equal({ error: 'Not connected to the UniFi controller', reason: 'NOT_CONNECTED' });
+        });
+
+        it('sendet keine Antwort ohne Callback', async () => {
+            const messageHandler = await loadMessageHandler();
+            const { adapter, sent } = createAdapterSpy();
+
+            messageHandler.client.getClients(createMessage('getClients', false), adapter, true);
+
+            expect(sent).to.have.length(0);
         });
     });
 });

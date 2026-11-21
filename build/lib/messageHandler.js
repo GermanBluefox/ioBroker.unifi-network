@@ -117,6 +117,44 @@ export const messageHandler = {
             if (message.callback) {
                 adapter.sendTo(message.from, message.command, clientStateList, message.callback);
             }
+        },
+        /**
+         * network.getClients of the shared catalog: the clients and guests the adapter keeps (the settings may leave
+         * some out), from its cache, not asked from the controller again. VPN clients have no MAC and are not listed.
+         *
+         * @param message the message, optional {online: true} = only the connected clients
+         * @param adapter the adapter with its cache
+         * @param connected whether the adapter is connected to the controller
+         */
+        getClients(message, adapter, connected) {
+            if (!message.callback) {
+                return;
+            }
+            const clients = Object.entries(adapter.cache.clients);
+            if (!connected && clients.length === 0) {
+                adapter.sendTo(message.from, message.command, { error: 'Not connected to the UniFi controller', reason: 'NOT_CONNECTED' }, message.callback);
+                return;
+            }
+            const onlyOnline = message.message?.online === true;
+            const list = [];
+            for (const [mac, client] of clients) {
+                const online = adapter.cache.isOnline[mac]?.val === true;
+                if (onlyOnline && !online) {
+                    continue;
+                }
+                const entry = { mac, name: client.name || client.hostname || mac, online, wired: !!client.is_wired };
+                if (client.ip) {
+                    entry.ip = client.ip;
+                }
+                if (!client.is_wired && client.last_uplink_name) {
+                    entry.accessPoint = client.last_uplink_name;
+                }
+                if (client.is_guest) {
+                    entry.guest = true;
+                }
+                list.push(entry);
+            }
+            adapter.sendTo(message.from, message.command, { clients: _.orderBy(list, ['name'], ['asc']) }, message.callback);
         }
     },
     wlan: {

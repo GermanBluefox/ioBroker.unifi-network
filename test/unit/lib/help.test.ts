@@ -34,6 +34,14 @@ describe('help', () => {
         expect(HELP).to.include('sendTo unifi-network.0');
     });
 
+    it('markiert die Befehle des gemeinsamen Katalogs und nennt sie im Text', () => {
+        const marked = Object.fromEntries(COMMANDS.filter(c => c.standard).map(c => [c.command, c.standard]));
+        expect(marked).to.deep.equal({ getClients: 'network.getClients' });
+        for (const standard of Object.values(marked)) {
+            expect(HELP, standard).to.include(standard);
+        }
+    });
+
     it('hält die Zeilen kurz', () => {
         for (const line of HELP.split('\n')) {
             expect(line.length, line).to.be.at.most(120);

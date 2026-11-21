@@ -47,6 +47,8 @@ You will need a local user created in your UniFi OS Console to log in with. Ubiq
 
 `sendTo('unifi-network.0', 'help', {})` answers `{ help, commands }`: a description of all messages (`clientList`, `deviceList`, `wlanList`, `lanList`, `firewallGroupList`, ...) and of the states to control the network, written for AI agents (e.g. ioBroker.pi-agent) and script authors. `commands` lists every message with `write: true` if it changes something.
 
+`sendTo('unifi-network.0', 'getClients', { online: true })` follows the shared catalog of commands for network adapters (`network.getClients`, marked with `standard` in `commands`): it answers `{ clients: [{ mac, name, ip?, online, wired, accessPoint?, guest? }] }` from the clients the adapter knows (`online: true` = only the connected ones).
+
 ## Development
 
 Tests against a real controller and recorded fixtures:
@@ -113,6 +115,10 @@ Fixtures are stored in `test/fixtures/local/` and are git-ignored, as they conta
 	Placeholder for the next version (at the beginning of the line):
 	### **WORK IN PROGRESS**
 -->
+### **WORK IN PROGRESS**
+
+- (@GermanBluefox) Added the standard commands of the shared catalog: network.getClients (`getClients`)
+
 ### 1.6.1 (2026-11-20)
 
 - (Scrounger) bug fixes found by adapter checker

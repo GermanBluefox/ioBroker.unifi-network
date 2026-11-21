@@ -5,6 +5,7 @@
 /** The commands `onMessage` answers */
 export const COMMANDS = [
     { command: 'help', write: false },
+    { command: 'getClients', write: false, standard: 'network.getClients' },
     { command: 'clientList', write: false },
     { command: 'deviceList', write: false },
     { command: 'wlanList', write: false },
@@ -21,8 +22,13 @@ UniFi devices (gateway, switches, access points), clients, WLANs, LANs and firew
 real time. An agent can see which clients are online and where, and control the network by writing states: block a
 client, switch a WLAN or the internet access of a LAN, restart a device, switch PoE ports.
 
-Commands (sendTo unifi-network.0), all answer a list [{label, value}] sorted by label; each list is read once and
-kept until the adapter restarts (new clients are missing, empty if asked before the connection):
+Commands (sendTo unifi-network.0):
+- getClients {online?}: follows the shared catalog of commands (network.getClients), the same for every network
+  adapter: the clients and guests as the adapter knows them now, sorted by name: {clients: [{mac, name, ip?,
+  online, wired, accessPoint? (name of the access point of a WLAN client), guest?}]}; online true = only the
+  connected ones. VPN clients are not listed. {error, reason: "NOT_CONNECTED"} before the first connection.
+The lists below answer [{label, value}] sorted by label; each is read once and kept until the adapter restarts
+(new clients are missing, empty if asked before the connection):
 - clientList: the clients: label "<name> (<mac>)", value = the MAC (the ID part of clients.users.<mac>).
 - deviceList: the UniFi devices: label "<name> (<mac>)", value = the MAC (devices.<mac>).
 - wlanList: the WLANs: label = the name (SSID), value = the id (wlan.<id>).
@@ -47,7 +53,7 @@ data, and the settings may leave states or clients out:
 A write that the controller refuses only appears in the log of the adapter; read the state again to check.
 
 How to talk to the user:
-- Name clients and devices by their name, not by MAC or id; find the MAC with clientList / deviceList.
+- Name clients and devices by their name, not by MAC or id; find the MAC with getClients / deviceList.
 - Only on the user's explicit request and after confirmation: blocked, reconnect, switching off a WLAN, a LAN, its
   internet access, a port or PoE (cameras and access points lose power), restart, upgrade, disabled, tx_power_mode
   and firewall group changes. Warn that the ioBroker host itself or the agent's own connection may be cut off.`;

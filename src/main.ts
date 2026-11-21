@@ -302,6 +302,9 @@ export class UnifiNetwork extends utils.Adapter {
 					await messageHandler.client.list(obj, this, this.ufn);
 				} else if (obj.command === 'clientStateList') {
 					messageHandler.client.stateList(obj, this, this.ufn);
+				} else if (obj.command === 'getClients') {
+					// network.getClients of the shared catalog
+					messageHandler.client.getClients(obj, this, this.isConnected);
 				} else if (obj.command === 'wlanList') {
 					await messageHandler.wlan.list(obj, this, this.ufn);
 				} else if (obj.command === 'wlanStateList') {
